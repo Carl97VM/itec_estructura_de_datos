@@ -5,3 +5,13 @@
 #### Desarrollado por:
 
 - Juan Carlos Vasquez Macias
+
+
+
+
+## Comandos de GIT
+``` bash
+$ git add .
+$ git commit -m "[mensaje]"
+$ git push
+```
