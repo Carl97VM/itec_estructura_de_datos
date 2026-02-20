@@ -7,7 +7,17 @@
 - Juan Carlos Vasquez Macias
 
 
+## Creacion de la llave SSH
+```bash
+$ https://docs.github.com/es/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent
+$ ssh-keygen -t ed25519 -C "your_email@example.com"
+# Solo presionar la tecla ENTER
+```
 
+## Instalar GIT
+```bash
+$ https://git-scm.com/install/windows
+```
 
 ## Comandos de GIT
 ``` bash
@@ -22,5 +32,5 @@ $ git pull
 # Para ver el estado de mi repositorio
 $ git status
 # Para unir ramas
-$ git mergue [rama_destino]
+$ git merge [rama_destino]
 ```
