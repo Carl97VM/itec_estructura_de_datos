@@ -9,6 +9,8 @@ class Estudiante:
             ahora = localtime()
             fecha_guardar = strftime("%Y-%m-%d %H:%M", ahora)
             # fecha_guardar = asctime()
+        else:
+            fecha_guardar = fecha
 
         # (fecha == None) ? fecha_guardar = asctime() : fecha
         self.fecha = fecha_guardar
