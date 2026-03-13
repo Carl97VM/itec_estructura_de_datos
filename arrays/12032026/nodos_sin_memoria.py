@@ -1,3 +1,5 @@
+# import os
+
 class Nodo:
     def __init__(self, nombre):
         self.nombre = nombre
@@ -34,20 +36,31 @@ class RegistroAsistencia:
 
     def mostrar(self):
         actual = self.cabeza
+        print("\nLista de asistencia en memoria:")
         while actual:
-            print(actual.nombre, end=" -> ")
+            print(f"Estudiante:{actual.nombre}")
             actual = actual.siguiente
-        print("None")
+
+    def vaciar_registros(self):
+        self.cabeza = None
+        with open(self.archivo, 'w') as archivo:
+            archivo.write('')
 
 ## Tarea para el 19/03/2026
 ## Agregar a la lista sin guardar
 ## Agregar el metodo vaciar registros 
+## Agregar el introducir datos por consola 
 
 if __name__ == "__main__":
     lista = RegistroAsistencia()
-    lista.agregar_estudiante("Johan")
-    lista.agregar_estudiante("Jose")
-    lista.agregar_estudiante("Marvin")
-    lista.agregar_estudiante("Tania")
-    lista.agregar_estudiante("Teresa")
+    # lista.agregar_estudiante("Johan")
+    # lista.agregar_estudiante("Jose")
+    # lista.agregar_estudiante("Marvin")
+    # lista.agregar_estudiante("Tania")
+    # lista.agregar_estudiante("Teresa")
+    nombre = input("Ingrese el nombre del estudiante o (salir)")
+    if nombre != "salir":
+        lista.agregar_estudiante(nombre)
+    else:
+        lista.vaciar_registros()
     lista.mostrar()
