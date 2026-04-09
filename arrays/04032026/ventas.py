@@ -45,12 +45,7 @@ class RegistrarVentas:
                 print(venta)
 
     # Actualizar
-    def actualizar_venta(self, 
-        id: int, 
-        producto: Optional[str] = None,
-        cantidad: Optional[int] = None,
-        precio_unitario: Optional[float] = None,
-        fecha_actualizacion: Optional[str] = None):
+    def actualizar_venta(self, id: int, producto: Optional[str] = None, cantidad: Optional[int] = None, precio_unitario: Optional[float] = None, fecha_actualizacion: Optional[str] = None):
         for venta in self.pila:
             if venta.id == id:
                 if producto:

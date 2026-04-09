@@ -1,27 +1,35 @@
-# import os
+import os
 
 class Nodo:
     def __init__(self, nombre):
         self.nombre = nombre
-        self.siguiente = None ## Que el puntero esperara al siguiente elemento
+        self.siguiente = None
 
 class RegistroAsistencia:
-    def __init__(self, archivo='asistencia.txt'):
-        self.archivo = archivo
+    def __init__(self, carpeta='arrays/12032026', archivo='asistencia.txt'):
+        # Construimos la ruta completa para que no dependa de la raíz
+        self.ruta_completa = os.path.join(carpeta, archivo)
         self.cabeza = None
+        
+        # Si la carpeta no existe, la creamos para evitar errores
+        if not os.path.exists(carpeta):
+            os.makedirs(carpeta)
+            
         self.cargar_datos()
 
     def cargar_datos(self):
-        try:
-            with open(self.archivo, 'r') as archivo:
+        if os.path.exists(self.ruta_completa):
+            with open(self.ruta_completa, 'r') as archivo:
                 for linea in archivo:
                     nombre = linea.strip()
                     if nombre:
-                        self.agregar_estudiante(nombre)
-        except FileNotFoundError:
-            print(f"El archivo {self.archivo} no existe.")
+                        # Cargamos a la lista en memoria (sin volver a escribir al archivo)
+                        self._agregar_a_memoria(nombre)
+        else:
+            print(f"Aviso: El archivo {self.ruta_completa} se creará al guardar datos.")
 
-    def agregar_estudiante(self, nombre):
+    def _agregar_a_memoria(self, nombre):
+        """Método interno para armar la lista enlazada en RAM"""
         nuevo_nodo = Nodo(nombre)
         if not self.cabeza:
             self.cabeza = nuevo_nodo
@@ -31,36 +39,49 @@ class RegistroAsistencia:
                 actual = actual.siguiente
             actual.siguiente = nuevo_nodo
 
-        with open(self.archivo, 'a') as archivo:
-            archivo.write(nombre + '\n')
+    def agregar_estudiante(self, nombre, guardar_en_disco=True):
+        self._agregar_a_memoria(nombre)
+        if guardar_en_disco:
+            with open(self.ruta_completa, 'a') as archivo:
+                archivo.write(nombre + '\n')
 
     def mostrar(self):
         actual = self.cabeza
-        print("\nLista de asistencia en memoria:")
+        if not actual:
+            print("\nLa lista de asistencia está vacía.")
+            return
+        print("\n--- Lista de Asistencia Actual (Memoria) ---")
         while actual:
-            print(f"Estudiante:{actual.nombre}")
+            print(f"Estudiante: {actual.nombre}")
             actual = actual.siguiente
+        print("-------------------------------------------\n")
 
     def vaciar_registros(self):
         self.cabeza = None
-        with open(self.archivo, 'w') as archivo:
+        # 'w' sobreescribe el archivo dejándolo vacío
+        with open(self.ruta_completa, 'w') as archivo:
             archivo.write('')
-
-## Tarea para el 19/03/2026
-## Agregar a la lista sin guardar
-## Agregar el metodo vaciar registros 
-## Agregar el introducir datos por consola 
+        print(">>> Registros eliminados del archivo y de la memoria.")
 
 if __name__ == "__main__":
+    # Se inicializa con la ruta correcta que viste en tu terminal
     lista = RegistroAsistencia()
-    # lista.agregar_estudiante("Johan")
-    # lista.agregar_estudiante("Jose")
-    # lista.agregar_estudiante("Marvin")
-    # lista.agregar_estudiante("Tania")
-    # lista.agregar_estudiante("Teresa")
-    nombre = input("Ingrese el nombre del estudiante o (salir)")
-    if nombre != "salir":
-        lista.agregar_estudiante(nombre)
-    else:
-        lista.vaciar_registros()
-    lista.mostrar()
+
+    while True:
+        print("Opciones: [Nombre Estudiante] | 'salir' (ver lista) | 'eliminar' (borrar todo)")
+        entrada = input("Introduce una opción: ").strip()
+
+        if entrada.lower() == 'salir':
+            lista.mostrar()
+            break
+        
+        elif entrada.lower() == 'eliminar':
+            lista.vaciar_registros()
+            
+        elif entrada:
+            # Agregamos a memoria y al bloc de notas
+            lista.agregar_estudiante(entrada)
+            print(f"'{entrada}' registrado.")
+        
+        else:
+            print("Por favor, introduce un nombre válido.")
