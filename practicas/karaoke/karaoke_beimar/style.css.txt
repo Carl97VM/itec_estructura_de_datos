@@ -1,0 +1,26 @@
+body {
+    font-family: Arial;
+    text-align: center;
+    background: #111;
+    color: white;
+}
+
+h1 {
+    margin-top: 20px;
+}
+
+#letra {
+    margin-top: 30px;
+    font-size: 24px;
+}
+
+#letra p {
+    opacity: 0.5;
+    transition: 0.3s;
+}
+
+.activa {
+    color: yellow;
+    font-size: 28px;
+    opacity: 1;
+}

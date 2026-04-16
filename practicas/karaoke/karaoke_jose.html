@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karaoke - Me Pones en Tensión</title>
+    <style>
+        body {
+            background-color: #0b0b0b;
+            color: #ffffff;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        .karaoke-card {
+            background: linear-gradient(145deg, #1a1a1a, #252525);
+            padding: 40px;
+            border-radius: 25px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            text-align: center;
+            width: 80%;
+            max-width: 500px;
+            border: 1px solid #333;
+        }
+        h2 { color: #1db954; margin-bottom: 5px; }
+        h3 { color: #888; font-weight: normal; margin-top: 0; font-size: 1rem; }
+       
+        #lyric-box {
+            height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        #text {
+            font-size: 1.8rem;
+            font-weight: bold;
+            line-height: 1.2;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+        }
+        audio {
+            width: 100%;
+            margin-top: 20px;
+            border-radius: 50px;
+        }
+        .footer-tag {
+            font-size: 0.7rem;
+            color: #444;
+            margin-top: 20px;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="karaoke-card">
+    <h2>KARAOKE GONZa</h2>
+    <h3>Zion & Lennox - Me pones en tensión</h3>
+   
+    <div id="lyric-box">
+        <div id="text">Dale Play para empezar</div>
+    </div>
+
+    <audio id="track" controls>
+        <source src="Me Pones en Tension.mp3" type="audio/mpeg">
+        Tu navegador no soporta el audio.
+    </audio>
+
+    <div class="footer-tag">ESTRUCTURA DE DATOS | REPOSITORIO DE TAREAS</div>
+</div>
+
+<script>
+    // ESTRUCTURA DE DATOS: Array de objetos (Lista secuencial)
+    const cancionData = [
+        { s: 0, t: "🎶 (Intro Instrumental) 🎶" },
+        { s: 5, t: "Zion y Lennox..." },
+        { s: 7, t: "Motivando a la yal" },
+        { s: 9, t: "Me pones en tensión" },
+        { s: 12, t: "Cuando bailas así" },
+        { s: 14, t: "Me pones mal a mí" },
+        { s: 17, t: "No lo puedo resistir" },
+        { s: 19, t: "Declaro que quiero conectarte yo" },
+        { s: 22, t: "Te quiero sentir" },
+        { s: 25, t: "Me pones mal a mí" },
+        { s: 27, t: "Declaro que quiero azotarte yo" },
+        { s: 30, t: "¡Te quiero sentir!" },
+        { s: 33, t: "Me pones en tensión..." },
+        { s: 36, t: "Cuando bailas así..." }
+    ];
+
+    const player = document.getElementById('track');
+    const lyricText = document.getElementById('text');
+
+    // Manejador de evento de tiempo
+    player.addEventListener('timeupdate', () => {
+        const tempActual = player.currentTime;
+       
+        // Algoritmo de búsqueda en la estructura de datos
+        const verso = cancionData.filter(item => tempActual >= item.s).pop();
+
+        if (verso && lyricText.innerText !== verso.t) {
+            lyricText.style.opacity = "0"; // Efecto de salida
+           
+            setTimeout(() => {
+               lyricText.innerText = verso.t;
+                lyricText.style.opacity = "1"; // Efecto de entrada
+               
+                // Color dinámico para el coro
+                if(verso.t.includes("tensión")) {
+                    lyricText.style.color = "#ff4d4d";
+                } else {
+                    lyricText.style.color = "#ffffff";
+                }
+            }, 200);
+        }
+    });
+</script>
+
+</body>
+</html>

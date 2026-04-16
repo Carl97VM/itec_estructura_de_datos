@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Karaoke 🎤</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>🎤 Karaoke - Mi Canción Favorita</h1>
+
+<audio id="audio" controls>
+    <source src="cancion.mp3" type="audio/mpeg">
+</audio>
+
+<div id="letra">
+    <p id="linea1">♪ Primera línea de la canción</p>
+    <p id="linea2">♪ Segunda línea de la canción</p>
+    <p id="linea3">♪ Tercera línea de la canción</p>
+</div>
+
+<script>
+const audio = document.getElementById("audio");
+
+audio.addEventListener("timeupdate", () => {
+    let t = audio.currentTime;
+
+    resetear();
+
+    if (t > 2 && t < 6) activar("linea1");
+    if (t > 6 && t < 10) activar("linea2");
+    if (t > 10 && t < 15) activar("linea3");
+});
+
+function activar(id) {
+    document.getElementById(id).classList.add("activa");
+}
+
+function resetear() {
+    document.querySelectorAll("#letra p").forEach(p => {
+        p.classList.remove("activa");
+    });
+}
+</script>
+
+</body>
+</html>
