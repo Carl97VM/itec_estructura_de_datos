@@ -23,7 +23,7 @@ class Pila:
     def esta_vacia(self):
             return len(self.item) ==0
        
-cancion = Pila[
+cancion = [
     {
         "texto": "Empezó de cero a ser lo que querían\nLas muñecas, y dar siempre la razón\nLa obediencia y la ternura, le decían\nSer rebelde era un asunto del varón",
         "espera": 2,
@@ -88,5 +88,5 @@ def reproducir_karaoke():
        
        
    
-    if __name__ == "__main__":
-        reproducir_karaoke()
+if __name__ == "__main__":
+    reproducir_karaoke()

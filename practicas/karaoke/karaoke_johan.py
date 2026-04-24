@@ -9,7 +9,7 @@ NEGRITA     = '\033[1m'
 RESET       = '\033[0m'
 
 class pila:
-    def _init_(self):
+    def __init__(self):
         self.items = []
 
     def apilar(self, item):
@@ -92,5 +92,5 @@ def reproducir_karaoke():
     print(f"{color}{texto}{RESET}")
     time.sleep(espera)
 
-if _name_ == "_main_":
-        reproducir_karaoke()
+if __name__ == "__main__":
+    reproducir_karaoke()
