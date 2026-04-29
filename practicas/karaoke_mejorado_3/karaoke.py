@@ -5,7 +5,7 @@ import shutil
 
 
 try:
-    import pygame
+    import pygame  # type: ignore[import]
     AUDIO_DISPONIBLE = True
 except ImportError:
     AUDIO_DISPONIBLE = False
@@ -87,12 +87,12 @@ cancion = [
 ]
 
 def efecto_escribir(texto, color, tiempo_espera=0.05):
-    lineas = texto.split('\n')
-    tiempo_espera_linea = tiempo_espera / len(lineas) if len(lineas) > 0 else tiempo_espera
+    oracion = texto.split('\n')
+    tiempo_espera_linea = tiempo_espera / len(oracion) if len(oracion) > 0 else tiempo_espera
     
     ancho_terminal = shutil.get_terminal_size().columns
 
-    for linea in lineas:
+    for linea in oracion:
         if len(linea) == 0:
             print()
             continue
@@ -126,9 +126,9 @@ def reproducir_karaoke():
     if AUDIO_DISPONIBLE:
         try:
             ruta_completa = os.path.dirname(os.path.abspath(__file__))
-            print(ruta_completa)
+            # print(ruta_completa)
             ruta_cancion = os.path.join(ruta_completa, 'pista.mp3')
-            print(ruta_cancion)
+            # print(ruta_cancion)
             pygame.mixer.init()
             pygame.mixer.music.load(ruta_cancion)
             pygame.mixer.music.play()
@@ -145,6 +145,10 @@ def reproducir_karaoke():
         color = linea_actual["color"]
 
         efecto_escribir(texto, color, espera)
+
+    if AUDIO_DISPONIBLE and pygame.mixer.music.get_busy():
+        pygame.mixer.music.fadeout(2000)  # Desvanece el audio en 2 segundos
+        time.sleep(2)  # Espera a que el audio se desvanezca completamente
 
 if __name__ == "__main__":
     reproducir_karaoke()
