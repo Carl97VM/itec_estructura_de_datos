@@ -35,7 +35,7 @@ def efecto_maquina_escribir(texto, velocidad=0.05, color=BLANCO):
 def dibujar_encabezado():
     print(f"{CYAN}{NEGRITA}==============================")
     print("=== Bienvenido a la Consola ===")
-    print("==============================\n{RESET}")
+    print(f"==============================\n{RESET}")
     
 def calcular_hipotemusa():
     print(f"{AMARILLO}Calculadora de Hipotenusa{RESET}")
@@ -60,5 +60,64 @@ def caida_libre():
         print(f"{VERDE}El tiempo de caída libre es: {tiempo:.2f} segundos{RESET}")
     except ValueError:
         print(f"{ROJO}Entrada no válida. Por favor, ingrese un número válido.{RESET}")
+        
+def trigonometria_basica():
+    print(f"\n{AMARILLO}--- ANÁLISIS TRIGONOMÉTRICO ---{RESET}")
+    try:
+        grados = float(input(f"{CYAN}Ingresa un ángulo (en grados):{RESET} "))
+        
+        # math funciona con radianes, así que primero convertimos
+        radianes = math.radians(grados)
+        
+        seno = math.sin(radianes)
+        coseno = math.cos(radianes)
+        tangente = math.tan(radianes) if grados % 90 != 0 else "Indefinido"
+        
+        print("\n" + "="*35)
+        print(f"{MAGENTA}Resultados para {grados}°:{RESET}")
+        print(f"{VERDE}• Seno (sin):{RESET}   {seno:.4f}")
+        print(f"{VERDE}• Coseno (cos):{RESET} {coseno:.4f}")
+        
+        if isinstance(tangente, float):
+            print(f"{VERDE}• Tangente (tan):{RESET} {tangente:.4f}")
+        else:
+            print(f"{ROJO}• Tangente (tan):{RESET} {tangente}")
+        print("="*35)
+        
+    except ValueError:
+        print(f"{ROJO}❌ Error: Ingresa un valor numérico válido.{RESET}")
     
-def iniciar
+def iniciar_consola():
+    
+    if os.name == 'nt':
+        os.system('cls')
+        
+    
+    while True:
+        dibujar_encabezado()
+        print(f" {BLANCO}Seleccione un módulo matemático:{RESET}\n")
+        print(f" {CYAN}[1]{RESET} Pitágoras (Geometría)")
+        print(f" {CYAN}[2]{RESET} Caída Libre (Física)")
+        print(f" {CYAN}[3]{RESET} Trigonometría (Ángulos)")
+        print(f" {ROJO}[0]{RESET} Apagar Motor")
+        print("\n" + "─"*48)
+        
+        opcion = input(f" {AMARILLO}>> Comando:{RESET} ")
+        
+        match opcion:
+            case '1':
+                calcular_hipotemusa()
+            case '2':
+                caida_libre()
+            case '3':
+                trigonometria_basica()
+            case '0':
+                efecto_maquina_escribir("\nApagando subsistemas matemáticos... ¡Hasta pronto!", 0.05, ROJO)
+                sys.exit()
+            case _:
+                print(f"\n{ROJO}❌ Módulo no encontrado. Intente de nuevo.{RESET}")
+        
+        input(f"\n{NEGRITA}Presione ENTER para volver al panel principal...{RESET}")
+
+if __name__ == "__main__":
+    iniciar_consola()
