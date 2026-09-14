@@ -1,3 +1,5 @@
+from collections import deque
+
 class NodoLibro:
     def __init__(self, codigo, titulo, autor, cantidad):
         self.codigo = codigo
@@ -197,6 +199,71 @@ class ArbolBiblioteca:
             actual = actual.izq
 
         return actual
+    
+    def buscar_por_autor(self, autor_buscar):
+        libros_encontrados = []
+        self._buscar_por_autor_recursivo(self.raiz, autor_buscar.lower(), libros_encontrados)
+        
+        if not libros_encontrados:
+            print(f"[!] No se encontraron libros del autor: {autor_buscar}")
+            
+        return libros_encontrados
+
+    def _buscar_por_autor_recursivo(self, nodo, autor_buscar, libros_encontrados):
+        if nodo is None:
+            return
+
+        if nodo.autor.lower() == autor_buscar:
+            libros_encontrados.append(nodo)
+
+        self._buscar_por_autor_recursivo(nodo.izq, autor_buscar, libros_encontrados)
+        self._buscar_por_autor_recursivo(nodo.der, autor_buscar, libros_encontrados)
+        
+    def buscar_por_ragos(self, min_code, max_code):
+        libros_encontrados = []
+        self._buscar_por_rangos_recursivo(self.raiz, min_code, max_code, libros_encontrados)
+        
+        if not libros_encontrados:
+            print(f"[!] No se encontraron libros en el rango: {min_code} - {max_code}")
+            
+        return libros_encontrados
+    def _buscar_por_rangos_recursivo(self, nodo, min_code, max_code, libros_encontrados):
+        if nodo is None:
+            return
+
+        if min_code <= nodo.codigo <= max_code:
+            libros_encontrados.append(nodo)
+
+        if nodo.codigo > min_code:
+            self._buscar_por_rangos_recursivo(nodo.izq, min_code, max_code, libros_encontrados)
+
+        if nodo.codigo < max_code:
+            self._buscar_por_rangos_recursivo(nodo.der, min_code, max_code, libros_encontrados)
+            
+    def buscar_por_niveles(self, titulo_buscar):
+        if self.raiz is None:
+            print("[!] La biblioteca está vacía")
+            return []
+
+        libros_encontrados = []
+        cola = deque([self.raiz])
+
+        while cola:
+            nodo_actual = cola.popleft()
+
+            if nodo_actual.titulo.lower() == titulo_buscar.lower():
+                libros_encontrados.append(nodo_actual)
+
+            if nodo_actual.izq is not None:
+                cola.append(nodo_actual.izq)
+
+            if nodo_actual.der is not None:
+                cola.append(nodo_actual.der)
+
+        if not libros_encontrados:
+            print(f"[!] No se encontraron libros con el título: {titulo_buscar}")
+
+        return libros_encontrados
 
 
 def mostrar_libro(libro):
