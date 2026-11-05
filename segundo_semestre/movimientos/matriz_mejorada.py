@@ -8,17 +8,57 @@ from tkinter import ttk, messagebox
 # LÓGICA DE BÚSQUEDA MEJORADA (COSTE 0, LÍMITE DE MOVIMIENTOS Y CAMINO MÁS CORTO)
 # ==============================================================================
 
-def obtener_direcciones(usar_diagonales):
-    """Devuelve los vectores de movimiento (4 u 8 direcciones)."""
-    if usar_diagonales:
-        return [
-            (-1, 0), (1, 0), (0, -1), (0, 1),   # Arriba, Abajo, Izquierda, Derecha
-            (-1, -1), (-1, 1), (1, -1), (1, 1)  # Diagonales
-        ]
-    return [
-        (-1, 0), (1, 0), (0, -1), (0, 1)        # Solo Horizontal y Vertical
-    ]
+MODOS_DE_BUSQUEDA = {
+    "libre4": "Solo 4 direcciones (arriba, abajo, izquierda, derecha)",
+    "libre8": "8 direcciones (incluye diagonales)",
+    "vertical": "Solo vertical (arriba y abajo)",
+    "cruzado_x": "Cruzado en X (diagonales)",
+    "zigzag": "Movimiento en zigzag (alternando horizontal y vertical)",
+    "lineal": "Solo horizontal (izquierda y derecha)",
+} 
 
+def obtener_direcciones(modo_busqueda):
+    rectas = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # Arriba, Abajo, Izquierda, Derecha
+    diagonales = [(-1, -1), (-1, 1), (1, -1), (1, 1)]  # Diagonales
+    """Devuelve los vectores de movimiento (4 u 8 direcciones)."""
+    if modo_busqueda == "libre4":
+        return rectas
+    if modo_busqueda in ("libre8", "lineal"):
+        return rectas + diagonales
+    if modo_busqueda == "vertical":
+        return [(1, 0)]
+    if modo_busqueda == "cruzado_x":
+        return diagonales
+    if modo_busqueda == "zigzag":
+        return [(1, -1), (1, 1)]
+    return rectas  # Por defecto, solo 4 direcciones
+    #     return [
+    #         (-1, 0), (1, 0), (0, -1), (0, 1),   # Arriba, Abajo, Izquierda, Derecha
+    #         (-1, -1), (-1, 1), (1, -1), (1, 1)  # Diagonales
+    #     ]
+    # return [
+    #     (-1, 0), (1, 0), (0, -1), (0, 1)        # Solo Horizontal y Vertical
+    # ]
+    
+def es_movimiento_permitido(movimiento, direccion_anterior, modo_busqueda):
+    if direccion_anterior is None:
+        return True  # Primer movimiento permitido
+    if modo_busqueda == "zigzag":
+        return movimiento[1] != direccion_anterior[1]  # Alternar entre horizontal y vertical
+    if modo_busqueda == "lineal":
+        return movimiento == direccion_anterior  # Solo horizontal
+    return True
+
+def movimientos_validos(fila, col, n, modo_busqueda, direccion_anterior, visitados):
+    validos = []
+    for mov in obtener_direcciones(modo_busqueda):
+        if not es_movimiento_permitido(mov, direccion_anterior, modo_busqueda):
+            continue
+        nueva_fila, nueva_columna = fila + mov[0], col + mov[1]
+        if 0 <= nueva_fila < n and 0 <= nueva_columna < n:
+            if not esta_en_lista((nueva_fila, nueva_columna), visitados):
+                validos.append((nueva_fila, nueva_columna, mov))
+    return validos
 
 def esta_en_lista(coordenada, lista):
     """Comprueba si una tupla (fila, col) ya fue visitada."""
@@ -37,11 +77,12 @@ def buscar_caminos_recursivo(
     suma_actual,
     camino,
     visitados,
-    usar_diagonales,
+    modo_busqueda,
     movimientos_requeridos,
     mejor_camino,
     historial_eventos=None,
-    modo_movimientos="exacto"
+    modo_movimientos="exacto",
+    direccion_anterior=None
 ):
     """
     Explora recursivamente (Backtracking) soportando:
@@ -113,34 +154,57 @@ def buscar_caminos_recursivo(
                 visitados.pop()
                 return
 
-    # Explorar vecinos
-    movimientos = obtener_direcciones(usar_diagonales)
-    for mov_f, mov_c in movimientos:
-        nueva_f = fila + mov_f
-        nueva_c = col + mov_c
+    # # Explorar vecinos
+    # movimientos = obtener_direcciones(modo_busqueda)
+    # for mov_f, mov_c in movimientos:
+    #     nueva_f = fila + mov_f
+    #     nueva_c = col + mov_c
 
-        if 0 <= nueva_f < n and 0 <= nueva_c < n:
-            if not esta_en_lista((nueva_f, nueva_c), visitados):
-                buscar_caminos_recursivo(
-                    matriz,
-                    n,
-                    nueva_f,
-                    nueva_c,
-                    objetivo,
-                    suma_actual,
-                    camino,
-                    visitados,
-                    usar_diagonales,
-                    movimientos_requeridos,
-                    mejor_camino,
-                    historial_eventos,
-                    modo_movimientos
-                )
-                # Si pedían movimientos exactos y ya hallamos uno, podemos terminar antes
-                if movimientos_requeridos > 0 and modo_movimientos == "exacto" and mejor_camino[0] is not None:
-                    camino.pop()
-                    visitados.pop()
-                    return
+    #     if 0 <= nueva_f < n and 0 <= nueva_c < n:
+    #         if not esta_en_lista((nueva_f, nueva_c), visitados):
+    #             buscar_caminos_recursivo(
+    #                 matriz,
+    #                 n,
+    #                 nueva_f,
+    #                 nueva_c,
+    #                 objetivo,
+    #                 suma_actual,
+    #                 camino,
+    #                 visitados,
+    #                 modo_busqueda,
+    #                 movimientos_requeridos,
+    #                 mejor_camino,
+    #                 historial_eventos,
+    #                 modo_movimientos
+    #             )
+    #             # Si pedían movimientos exactos y ya hallamos uno, podemos terminar antes
+    #             if movimientos_requeridos > 0 and modo_movimientos == "exacto" and mejor_camino[0] is not None:
+    #                 camino.pop()
+    #                 visitados.pop()
+    #                 return
+    
+    for nueva_f, nueva_c, mov in movimientos_validos(fila, col, n, modo_busqueda, direccion_anterior, visitados):
+        buscar_caminos_recursivo(
+            matriz,
+            n,
+            nueva_f,
+            nueva_c,
+            objetivo,
+            suma_actual,
+            camino,
+            visitados,
+            modo_busqueda,
+            movimientos_requeridos,
+            mejor_camino,
+            historial_eventos,
+            modo_movimientos,
+            direccion_anterior=mov
+        )
+        # Si pedían movimientos exactos y ya hallamos uno, podemos terminar antes
+        if movimientos_requeridos > 0 and modo_movimientos == "exacto" and mejor_camino[0] is not None:
+            camino.pop()
+            visitados.pop()
+            return
 
     # Backtracking (retroceso)
     if historial_eventos is not None:
@@ -152,7 +216,7 @@ def buscar_caminos_recursivo(
 def resolver_matriz(
     matriz,
     objetivo,
-    usar_diagonales=False,
+    modo_busqueda="libre4",
     movimientos_requeridos=0,
     modo_movimientos="exacto"
 ):
@@ -180,7 +244,7 @@ def resolver_matriz(
                 suma_actual=0,
                 camino=[],
                 visitados=[],
-                usar_diagonales=usar_diagonales,
+                modo_busqueda=modo_busqueda,
                 movimientos_requeridos=movimientos_requeridos,
                 mejor_camino=mejor_camino,
                 historial_eventos=historial_eventos,
@@ -203,11 +267,11 @@ def limpiar_consola():
     os.system("cls" if os.name == "nt" else "clear")
 
 
-def animar_en_consola(matriz, objetivo, usar_diagonales=False, movimientos_requeridos=0, pausa=0.08):
+def animar_en_consola(matriz, objetivo, modo_busqueda="libre4", movimientos_requeridos=0, modo_movimientos="exacto", pausa=0.08):
     """Ejecuta la búsqueda y muestra una animación paso a paso en la terminal."""
     n = len(matriz)
     mejor_camino, eventos = resolver_matriz(
-        matriz, objetivo, usar_diagonales, movimientos_requeridos
+        matriz, objetivo, modo_busqueda, movimientos_requeridos, modo_movimientos
     )
 
     # Limitar cantidad de frames en consola para que no sea eterno si hay muchos pasos
@@ -223,6 +287,7 @@ def animar_en_consola(matriz, objetivo, usar_diagonales=False, movimientos_reque
         print("=" * 58)
         modo_mov = "Exactamente " + str(movimientos_requeridos) if movimientos_requeridos > 0 else "Mínimo posible (Más corto)"
         print(f" Objetivo Suma: {objetivo} | Movimientos: {modo_mov}")
+        print(f" Modo de Busqueda: {MODOS_DE_BUSQUEDA.get(modo_busqueda, modo_busqueda)}")
         print(f" Estado: {tipo.upper():12s} | Suma actual: {suma_actual:2d} | Pasos: {len(camino_actual)}")
         print("-" * 58)
 
@@ -331,6 +396,12 @@ class VentanaMatrizMejorada:
         tk.Spinbox(
             panel_ctrl, from_=0, to=25, textvariable=self.var_movimientos,
             font=("Segoe UI", 11), width=10
+        ).pack(anchor="w", pady=(2, 6))
+        
+        tk.Label(panel_ctrl, text="Modo de Busqueda:", **estilo_lbl).pack(anchor="w")
+        self.var_modo_busqueda = tk.StringVar(value=MODOS_DE_BUSQUEDA["libre4"])
+        ttk.Combobox(
+            panel_ctrl, textvariable=self.var_modo_busqueda, values=list(MODOS_DE_BUSQUEDA.values()), state="readonly", font=("Segoe UI", 10)
         ).pack(anchor="w", pady=(2, 6))
 
         self.var_modo_mov = tk.StringVar(value="exacto")
@@ -469,20 +540,27 @@ class VentanaMatrizMejorada:
         self.var_objetivo.set(0)
         self.var_movimientos.set(4)
         self.var_modo_mov.set("exacto")
-        self.var_diagonales.set(True)
+        self.var_modo_busqueda.set(MODOS_DE_BUSQUEDA["libre4"])
         self.iniciar_busqueda()
+        
+    def _obtener_modo_busqueda(self):
+        text = self.var_modo_busqueda.get()
+        for key, desc in MODOS_DE_BUSQUEDA.items():
+            if desc == text:
+                return key
+        return "libre4"  # Valor por defecto si no se encuentra
 
     def iniciar_busqueda(self):
         self.reiniciar_vista()
         objetivo = self.var_objetivo.get()
         mov_req = self.var_movimientos.get()
         modo_mov = self.var_modo_mov.get()
-        usar_diag = self.var_diagonales.get()
+        modo_busqueda = self._obtener_modo_busqueda()
 
         mejor_camino, eventos = resolver_matriz(
             self.matriz,
             objetivo=objetivo,
-            usar_diagonales=usar_diag,
+            modo_busqueda=modo_busqueda,
             movimientos_requeridos=mov_req,
             modo_movimientos=modo_mov
         )
@@ -490,6 +568,7 @@ class VentanaMatrizMejorada:
         # También imprimimos en consola el resumen
         print("\n" + "=" * 55)
         print(f"BÚSQUEDA EJECUTADA -> Objetivo: {objetivo} | Movimientos req.: {mov_req or 'Mínimo (Más corto)'}")
+        print(f"Modo de búsqueda: {MODOS_DE_BUSQUEDA[modo_busqueda]}")
         if mejor_camino:
             print(f"Camino óptimo ({len(mejor_camino)} movimientos): {mejor_camino}")
         else:
@@ -623,17 +702,22 @@ if __name__ == "__main__":
         opcion = "1"
 
     if opcion == "2":
+        claves_modo = list(MODOS_DE_BUSQUEDA.keys())
         try:
             obj = int(input("Ingresa la suma objetivo (ej. 10 o 0): ") or "10")
             movs = int(input("¿En cuántos movimientos? (0 = Camino más corto automático): ") or "0")
-            diag = input("¿Usar diagonales? (s/n): ").strip().lower() == "s"
+            print("Modos de búsqueda disponibles:")
+            for idx, clave in enumerate(claves_modo, start=1):
+                print(f"  {idx}. {MODOS_DE_BUSQUEDA[clave]}")
+            eleccion = int(input(f"Selecciona el modo de búsqueda (1-{len(claves_modo)}): ") or "1")
+            modo = claves_modo[eleccion - 1] if 1 <= eleccion <= len(claves_modo) else "libre4"
         except ValueError:
-            obj, movs, diag = 10, 0, False
+            obj, movs, modo = 10, 0, "libre4"
 
         animar_en_consola(
             matriz_prueba,
             objetivo=obj,
-            usar_diagonales=diag,
+            modo_busqueda=modo,
             movimientos_requeridos=movs,
             pausa=0.08
         )
