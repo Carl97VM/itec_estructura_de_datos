@@ -1,5 +1,6 @@
 import os
 import time
+import random
 import tkinter as tk
 from tkinter import ttk, messagebox
 
@@ -67,7 +68,6 @@ def esta_en_lista(coordenada, lista):
             return True
     return False
 
-
 def buscar_caminos_recursivo(
     matriz,
     n,
@@ -82,7 +82,8 @@ def buscar_caminos_recursivo(
     mejor_camino,
     historial_eventos=None,
     modo_movimientos="exacto",
-    direccion_anterior=None
+    direccion_anterior=None,
+    Q=None
 ):
     """
     Explora recursivamente (Backtracking) soportando:
@@ -183,7 +184,37 @@ def buscar_caminos_recursivo(
     #                 visitados.pop()
     #                 return
     
-    for nueva_f, nueva_c, mov in movimientos_validos(fila, col, n, modo_busqueda, direccion_anterior, visitados):
+    # for nueva_f, nueva_c, mov in movimientos_validos(fila, col, n, modo_busqueda, direccion_anterior, visitados):
+    #     buscar_caminos_recursivo(
+    #         matriz,
+    #         n,
+    #         nueva_f,
+    #         nueva_c,
+    #         objetivo,
+    #         suma_actual,
+    #         camino,
+    #         visitados,
+    #         modo_busqueda,
+    #         movimientos_requeridos,
+    #         mejor_camino,
+    #         historial_eventos,
+    #         modo_movimientos,
+    #         direccion_anterior=mov
+    #     )
+    #     # Si pedían movimientos exactos y ya hallamos uno, podemos terminar antes
+    #     if movimientos_requeridos > 0 and modo_movimientos == "exacto" and mejor_camino[0] is not None:
+    #         camino.pop()
+    #         visitados.pop()
+    #         return
+
+    vecinos = movimientos_validos(fila, col, n, modo_busqueda, direccion_anterior, visitados)
+
+    # APRENDIZAJE: si hay pesos aprendidos, probar primero los movimientos más prometedores
+    if Q is not None:
+        estado = (fila, col, suma_actual, direccion_anterior)
+        vecinos.sort(key=lambda v: Q.get((estado, v[2]), 0.0), reverse=True)
+
+    for nueva_f, nueva_c, mov in vecinos:
         buscar_caminos_recursivo(
             matriz,
             n,
@@ -198,7 +229,8 @@ def buscar_caminos_recursivo(
             mejor_camino,
             historial_eventos,
             modo_movimientos,
-            direccion_anterior=mov
+            direccion_anterior=mov,
+            Q=Q
         )
         # Si pedían movimientos exactos y ya hallamos uno, podemos terminar antes
         if movimientos_requeridos > 0 and modo_movimientos == "exacto" and mejor_camino[0] is not None:
@@ -212,13 +244,13 @@ def buscar_caminos_recursivo(
     camino.pop()
     visitados.pop()
 
-
 def resolver_matriz(
     matriz,
     objetivo,
     modo_busqueda="libre4",
     movimientos_requeridos=0,
-    modo_movimientos="exacto"
+    modo_movimientos="exacto",
+    Q=None
 ):
     """
     Recorre todas las celdas de inicio posibles y devuelve:
@@ -248,7 +280,8 @@ def resolver_matriz(
                 movimientos_requeridos=movimientos_requeridos,
                 mejor_camino=mejor_camino,
                 historial_eventos=historial_eventos,
-                modo_movimientos=modo_movimientos
+                modo_movimientos=modo_movimientos,
+                Q=Q
             )
 
             if movimientos_requeridos > 0 and modo_movimientos == "exacto" and mejor_camino[0] is not None:
@@ -257,6 +290,104 @@ def resolver_matriz(
             break
 
     return mejor_camino[0], historial_eventos
+
+
+# ==============================================================================
+# APRENDIZAJE POR REFUERZO (Q-LEARNING): EL SISTEMA APRENDE EL PESO DE CADA MOVIMIENTO
+# ==============================================================================
+
+def entrenar_q(matriz, objetivo, modo_busqueda="libre4", episodios=5000,
+               alfa=0.3, gamma=0.9, epsilon=1.0, max_pasos=12, Q=None):
+    """
+    Aprende Q[(estado, movimiento)] = qué tan bueno es hacer ese movimiento desde ese estado.
+      - estado = (fila, col, suma_actual, direccion_anterior)
+      - recompensa: +100 si llega justo al objetivo, -50 si se pasa, -1 por cada paso.
+    Si se pasa un Q ya existente, sigue aprendiendo sobre él (acumula experiencia).
+    """
+    n = len(matriz)
+    Q = Q if Q is not None else {}
+    min_pasos = 2 if objetivo == 0 else 1
+
+    for _ in range(episodios):
+        # Cada episodio empieza en una celda al azar
+        f, c = random.randrange(n), random.randrange(n)
+        if objetivo == 0 and matriz[f][c] != 0:
+            continue
+        suma, direccion, visitados = matriz[f][c], None, [(f, c)]
+
+        for _ in range(max_pasos):
+            estado = (f, c, suma, direccion)
+            acciones = movimientos_validos(f, c, n, modo_busqueda, direccion, visitados)
+            if not acciones:
+                break
+
+            # Explorar (azar) o explotar (usar el mejor peso aprendido)
+            if random.random() < epsilon:
+                nf, nc, mov = random.choice(acciones)
+            else:
+                nf, nc, mov = max(acciones, key=lambda a: Q.get((estado, a[2]), 0.0))
+
+            nueva_suma = suma + matriz[nf][nc]
+            visitados.append((nf, nc))
+            if nueva_suma == objetivo and len(visitados) >= min_pasos:
+                recompensa, fin = 100.0, True
+            elif nueva_suma > objetivo:
+                recompensa, fin = -50.0, True
+            else:
+                recompensa, fin = -1.0, False
+
+            # Mejor valor futuro desde el estado siguiente
+            sig_estado = (nf, nc, nueva_suma, mov)
+            futuro = 0.0
+            if not fin:
+                sig = movimientos_validos(nf, nc, n, modo_busqueda, mov, visitados)
+                futuro = max((Q.get((sig_estado, a[2]), 0.0) for a in sig), default=0.0)
+
+            # Fórmula de Q-learning
+            viejo = Q.get((estado, mov), 0.0)
+            Q[(estado, mov)] = viejo + alfa * (recompensa + gamma * futuro - viejo)
+
+            f, c, suma, direccion = nf, nc, nueva_suma, mov
+            if fin:
+                break
+
+        epsilon = max(0.05, epsilon * 0.999)  # Cada vez explora menos y usa más lo aprendido
+
+    return Q
+
+
+def camino_aprendido(matriz, objetivo, Q, inicio, modo_busqueda="libre4", max_pasos=12):
+    """Desde 'inicio', sigue siempre el movimiento de mayor peso aprendido (sin backtracking)."""
+    n = len(matriz)
+    min_pasos = 2 if objetivo == 0 else 1
+    f, c = inicio
+    suma, direccion, camino = matriz[f][c], None, [(f, c)]
+
+    for _ in range(max_pasos):
+        if suma == objetivo and len(camino) >= min_pasos:
+            return camino
+        acciones = movimientos_validos(f, c, n, modo_busqueda, direccion, camino)
+        if not acciones:
+            return None
+        estado = (f, c, suma, direccion)
+        f, c, direccion = max(acciones, key=lambda a: Q.get((estado, a[2]), 0.0))
+        suma += matriz[f][c]
+        camino.append((f, c))
+        if suma > objetivo:
+            return None
+    return camino if (suma == objetivo and len(camino) >= min_pasos) else None
+
+
+def mejor_camino_aprendido(matriz, objetivo, Q, modo_busqueda="libre4"):
+    """Prueba el camino aprendido desde todas las celdas y devuelve el más corto."""
+    n = len(matriz)
+    mejor = None
+    for i in range(n):
+        for j in range(n):
+            camino = camino_aprendido(matriz, objetivo, Q, (i, j), modo_busqueda)
+            if camino and (mejor is None or len(camino) < len(mejor)):
+                mejor = camino
+    return mejor
 
 
 # ==============================================================================
@@ -347,6 +478,10 @@ class VentanaMatrizMejorada:
         self.animando = False
         self.after_id = None
 
+        # Memoria del aprendizaje (Q-learning)
+        self.Q = None              # Pesos aprendidos
+        self.contexto_q = None     # (matriz, objetivo, modo) con los que se entrenó
+
         self._construir_interfaz()
         self._dibujar_tablero()
 
@@ -418,16 +553,13 @@ class VentanaMatrizMejorada:
             activebackground="#313244", activeforeground="#cdd6f4", font=("Segoe UI", 9)
         ).pack(side=tk.LEFT)
 
-        # 3. Diagonales
-        self.var_diagonales = tk.BooleanVar(value=False)
-        tk.Checkbutton(
-            panel_ctrl,
-            text="Permitir Diagonales (8 direcciones)",
-            variable=self.var_diagonales,
-            bg="#313244", fg="#cdd6f4", selectcolor="#45475a",
-            activebackground="#313244", activeforeground="#cdd6f4",
-            font=("Segoe UI", 10)
-        ).pack(anchor="w", pady=(0, 10))
+        # 3. Aprendizaje: cuántos episodios de entrenamiento
+        tk.Label(panel_ctrl, text="Episodios de entrenamiento:", **estilo_lbl).pack(anchor="w")
+        self.var_episodios = tk.IntVar(value=20000)
+        tk.Spinbox(
+            panel_ctrl, from_=1000, to=200000, increment=1000,
+            textvariable=self.var_episodios, font=("Segoe UI", 11), width=10
+        ).pack(anchor="w", pady=(2, 10))
 
         # 4. Velocidad de animación
         tk.Label(panel_ctrl, text="Velocidad de Animación (ms):", **estilo_lbl).pack(anchor="w")
@@ -454,6 +586,21 @@ class VentanaMatrizMejorada:
             relief=tk.FLAT, pady=6, cursor="hand2"
         )
         btn_solo_coste_cero.pack(fill=tk.X, pady=4)
+
+        frame_ia = tk.Frame(panel_ctrl, bg="#313244")
+        frame_ia.pack(fill=tk.X, pady=4)
+        tk.Button(
+            frame_ia, text="🧠 Entrenar",
+            command=self.entrenar_sistema,
+            bg="#cba6f7", fg="#11111b", font=("Segoe UI", 10, "bold"),
+            relief=tk.FLAT, pady=6, cursor="hand2"
+        ).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 4))
+        tk.Button(
+            frame_ia, text="🎯 Aprendido",
+            command=self.mostrar_camino_aprendido,
+            bg="#f5c2e7", fg="#11111b", font=("Segoe UI", 10, "bold"),
+            relief=tk.FLAT, pady=6, cursor="hand2"
+        ).pack(side=tk.LEFT, fill=tk.X, expand=True)
 
         btn_detener = tk.Button(
             panel_ctrl, text="⏹ Detener / Limpiar",
@@ -519,6 +666,8 @@ class VentanaMatrizMejorada:
             return
         # Cicla entre 0 y 9 al hacer clic
         self.matriz[f][c] = (self.matriz[f][c] + 1) % 10
+        self.Q = None              # La matriz cambió: lo aprendido ya no sirve
+        self.contexto_q = None
         self.reiniciar_vista()
 
     def reiniciar_vista(self):
@@ -550,6 +699,85 @@ class VentanaMatrizMejorada:
                 return key
         return "libre4"  # Valor por defecto si no se encuentra
 
+    # ------------------------------------------------------------------
+    # APRENDIZAJE (Q-LEARNING)
+    # ------------------------------------------------------------------
+    def _contexto_actual(self):
+        """Identifica la situación: si cambia la matriz, el objetivo o el modo, hay que reentrenar."""
+        return (
+            tuple(tuple(fila) for fila in self.matriz),
+            self.var_objetivo.get(),
+            self._obtener_modo_busqueda()
+        )
+
+    def _q_vigente(self):
+        """Devuelve el Q aprendido solo si corresponde a la situación actual."""
+        if self.Q is not None and self.contexto_q == self._contexto_actual():
+            return self.Q
+        return None
+
+    def entrenar_sistema(self):
+        if self.animando:
+            return
+        self.reiniciar_vista()
+        objetivo = self.var_objetivo.get()
+        modo_busqueda = self._obtener_modo_busqueda()
+        episodios = self.var_episodios.get()
+        contexto = self._contexto_actual()
+
+        # Si ya había entrenamiento de esta misma situación, se sigue acumulando experiencia
+        q_previo = self.Q if self.contexto_q == contexto else None
+        self.lbl_estado.config(text=f"Entrenando {episodios} episodios...")
+        self.root.update_idletasks()
+
+        self.Q = entrenar_q(self.matriz, objetivo, modo_busqueda, episodios=episodios, Q=q_previo)
+        self.contexto_q = contexto
+
+        # Comparar: cuántos pasos necesita el backtracking sin y con lo aprendido
+        _, ev_sin = resolver_matriz(self.matriz, objetivo, modo_busqueda,
+                                    self.var_movimientos.get(), self.var_modo_mov.get())
+        _, ev_con = resolver_matriz(self.matriz, objetivo, modo_busqueda,
+                                    self.var_movimientos.get(), self.var_modo_mov.get(), Q=self.Q)
+
+        print("\n" + "=" * 55)
+        print(f"ENTRENAMIENTO -> {episodios} episodios | Estados aprendidos: {len(self.Q)}")
+        print(f"Eventos backtracking SIN aprendizaje: {len(ev_sin)}")
+        print(f"Eventos backtracking CON aprendizaje: {len(ev_con)}")
+        print("=" * 55)
+
+        self.lbl_estado.config(
+            text=f"¡Entrenamiento completo!\n"
+                 f"• Estados aprendidos: {len(self.Q)}\n"
+                 f"• Pasos de búsqueda sin aprender: {len(ev_sin)}\n"
+                 f"• Pasos de búsqueda con lo aprendido: {len(ev_con)}\n"
+                 f"Pulsa ▶ Buscar (ya usa lo aprendido) o 🎯 Aprendido."
+        )
+
+    def mostrar_camino_aprendido(self):
+        if self.animando:
+            return
+        Q = self._q_vigente()
+        if Q is None:
+            messagebox.showinfo(
+                "Sin entrenamiento",
+                "Primero pulsa 🧠 Entrenar con esta matriz, objetivo y modo de búsqueda."
+            )
+            return
+        self.reiniciar_vista()
+        objetivo = self.var_objetivo.get()
+        camino = mejor_camino_aprendido(self.matriz, objetivo, Q, self._obtener_modo_busqueda())
+        print(f"\nCAMINO APRENDIDO (sin backtracking): {camino}")
+        self._mostrar_resultado_final(camino, objetivo, 0)
+        if camino:
+            self.lbl_estado.config(
+                text=f"🎯 CAMINO ELEGIDO POR LO APRENDIDO\n"
+                     f"(sin probar alternativas)\n"
+                     f"• Movimientos: {len(camino)}\n"
+                     f"• Ruta: {camino}"
+            )
+        else:
+            self.lbl_estado.config(text="Lo aprendido aún no alcanza el objetivo. Entrena más episodios.")
+
     def iniciar_busqueda(self):
         self.reiniciar_vista()
         objetivo = self.var_objetivo.get()
@@ -562,7 +790,8 @@ class VentanaMatrizMejorada:
             objetivo=objetivo,
             modo_busqueda=modo_busqueda,
             movimientos_requeridos=mov_req,
-            modo_movimientos=modo_mov
+            modo_movimientos=modo_mov,
+            Q=self._q_vigente()          # Usa lo aprendido si corresponde a esta situación
         )
 
         # También imprimimos en consola el resumen
